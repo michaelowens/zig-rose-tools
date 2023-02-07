@@ -1,9 +1,8 @@
 const std = @import("std");
 const fs = std.fs;
-// const utf8ToUtf16Le = std.unicode.utf8ToUtf16Le;
-const utils = @import("utils.zig");
-const Vec2 = utils.Vec2;
-const Vec3 = utils.Vec3;
+
+pub const IDX = @import("files/idx.zig").IDX;
+pub const TSI = @import("files/tsi.zig").TSI;
 
 pub const RoseFile = struct {
     const Self = @This();
@@ -100,3 +99,41 @@ pub const RoseFile = struct {
         try self.writeInt(T, value.z);
     }
 };
+
+pub fn Vec2(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        x: T,
+        y: T,
+
+        pub fn init(x: T, y: T) Self {
+            return .{
+                .x = x,
+                .y = y,
+            };
+        }
+    };
+}
+
+pub fn Vec3(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        x: T,
+        y: T,
+        z: T,
+
+        pub fn init(x: T, y: T, z: T) Self {
+            return .{
+                .x = x,
+                .y = y,
+                .z = z,
+            };
+        }
+    };
+}
+
+test {
+    std.testing.refAllDecls(@This());
+}

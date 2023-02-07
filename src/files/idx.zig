@@ -1,8 +1,9 @@
 // Virtual File System Index
 
 const std = @import("std");
+const RoseFile = @import("../rosetools.zig").RoseFile;
 const fs = std.fs;
-const RoseFile = @import("../rosefile.zig").RoseFile;
+const testing = std.testing;
 
 pub const IDX = struct {
     const Self = @This();
@@ -132,3 +133,21 @@ pub const IDX = struct {
         }
     }
 };
+
+test "reading IDX file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const file = try fs.cwd().openFile("test_files/data.idx", .{});
+    defer file.close();
+
+    const rosefile = try RoseFile.init(allocator, file, .{});
+    const filesize = try rosefile.file.getEndPos();
+
+    var idx = IDX.init();
+    try idx.read(allocator, rosefile);
+
+    try testing.expect(filesize == try rosefile.file.getPos());
+    try testing.expect(1 == idx.file_systems.len);
+}

@@ -1,9 +1,11 @@
 // Sprite Information
 
 const std = @import("std");
+const RoseTools = @import("../rosetools.zig");
 const fs = std.fs;
-const RoseFile = @import("../rosefile.zig").RoseFile;
-const Vec2 = @import("../utils.zig").Vec2;
+const RoseFile = RoseTools.RoseFile;
+const Vec2 = RoseTools.Vec2;
+const testing = std.testing;
 
 pub const TSI = struct {
     const Self = @This();
@@ -88,3 +90,21 @@ pub const TSI = struct {
         }
     }
 };
+
+test "reading TSI file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const file = try fs.cwd().openFile("test_files/UI2.TSI", .{});
+    defer file.close();
+
+    const rosefile = try RoseFile.init(allocator, file, .{});
+    const filesize = try rosefile.file.getEndPos();
+
+    var tsi = TSI.init();
+    try tsi.read(allocator, rosefile);
+
+    try testing.expect(filesize == try rosefile.file.getPos());
+    try testing.expect(46 == tsi.sprite_sheets.len);
+}
