@@ -103,3 +103,41 @@ test "reading TSI file" {
     try testing.expect(filesize == try rosefile.file.getPos());
     try testing.expect(46 == tsi.sprite_sheets.len);
 }
+
+test "writing TSI file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const read_file = try fs.cwd().openFile("test_files/UI2.TSI", .{});
+    defer read_file.close();
+    const read_rosefile = try RoseFile.init(allocator, read_file, .{});
+    var read_idx = TSI.init();
+    try read_idx.read(allocator, read_rosefile);
+
+    var write_file = try tmp.dir.createFile("UI2.TSI", .{ .read = true });
+    defer write_file.close();
+    const write_rosefile = try RoseFile.init(allocator, write_file, .{});
+    try read_idx.write(write_rosefile);
+    try write_file.reader().context.seekTo(0);
+
+    var written_idx = TSI.init();
+    try written_idx.read(allocator, write_rosefile);
+
+    try testing.expect(try write_file.reader().context.getEndPos() == try read_file.reader().context.getEndPos());
+    try testing.expect(written_idx.sprite_sheets.len == read_idx.sprite_sheets.len);
+
+    for (read_idx.sprite_sheets) |sprite_sheet, i| {
+        try testing.expectEqualStrings(sprite_sheet.path, written_idx.sprite_sheets[i].path);
+        try testing.expect(written_idx.sprite_sheets[i].color_key == sprite_sheet.color_key);
+
+        for (sprite_sheet.sprites) |sprite, si| {
+            try testing.expectEqualStrings(sprite.name, written_idx.sprite_sheets[i].sprites[si].name);
+            try testing.expectEqualDeep(sprite.start_point, written_idx.sprite_sheets[i].sprites[si].start_point);
+            try testing.expectEqualDeep(sprite.end_point, written_idx.sprite_sheets[i].sprites[si].end_point);
+            try testing.expect(sprite.color == written_idx.sprite_sheets[i].sprites[si].color);
+        }
+    }
+}

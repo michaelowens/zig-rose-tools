@@ -44,8 +44,8 @@ pub const TIL = struct {
     pub fn write(self: *Self, file: RoseFile) !void {
         try file.writeInt(i32, self.width);
         try file.writeInt(i32, self.height);
-        for (self.tiles) |row| {
-            for (self.tiles[row]) |col| {
+        for (self.tiles) |_, row| {
+            for (self.tiles[row]) |_, col| {
                 try file.writeInt(u8, self.tiles[row][col].brush_id);
                 try file.writeInt(u8, self.tiles[row][col].tile_idx);
                 try file.writeInt(u8, self.tiles[row][col].tile_set);
@@ -70,4 +70,39 @@ test "reading TIL file" {
     try til.read(allocator, rosefile);
 
     try testing.expect(filesize == try rosefile.file.getPos());
+}
+
+test "writing TIL file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const read_file = try fs.cwd().openFile("test_files/31_30.TIL", .{});
+    defer read_file.close();
+    const read_rosefile = try RoseFile.init(allocator, read_file, .{});
+    var read_idx = TIL.init();
+    try read_idx.read(allocator, read_rosefile);
+
+    var write_file = try tmp.dir.createFile("31_30.TIL", .{ .read = true });
+    defer write_file.close();
+    const write_rosefile = try RoseFile.init(allocator, write_file, .{});
+    try read_idx.write(write_rosefile);
+    try write_file.reader().context.seekTo(0);
+
+    var written_idx = TIL.init();
+    try written_idx.read(allocator, write_rosefile);
+
+    try testing.expect(try write_file.reader().context.getEndPos() == try read_file.reader().context.getEndPos());
+    try testing.expect(written_idx.width == read_idx.width);
+    try testing.expect(written_idx.height == read_idx.height);
+    for (read_idx.tiles) |_, row| {
+        for (read_idx.tiles[row]) |tile, col| {
+            try testing.expect(written_idx.tiles[row][col].brush_id == tile.brush_id);
+            try testing.expect(written_idx.tiles[row][col].tile_idx == tile.tile_idx);
+            try testing.expect(written_idx.tiles[row][col].tile_set == tile.tile_set);
+            try testing.expect(written_idx.tiles[row][col].tile_id == tile.tile_id);
+        }
+    }
 }

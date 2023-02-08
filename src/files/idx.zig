@@ -143,3 +143,47 @@ test "reading IDX file" {
     try testing.expect(filesize == try rosefile.file.getPos());
     try testing.expect(1 == idx.file_systems.len);
 }
+
+test "writing IDX file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const read_file = try fs.cwd().openFile("test_files/data.idx", .{});
+    defer read_file.close();
+    const read_rosefile = try RoseFile.init(allocator, read_file, .{});
+    var read_idx = IDX.init();
+    try read_idx.read(allocator, read_rosefile);
+
+    var write_file = try tmp.dir.createFile("data.idx", .{ .read = true });
+    defer write_file.close();
+    const write_rosefile = try RoseFile.init(allocator, write_file, .{});
+    try read_idx.write(allocator, write_rosefile);
+    try write_file.reader().context.seekTo(0);
+
+    var written_idx = IDX.init();
+    try written_idx.read(allocator, write_rosefile);
+
+    try testing.expect(try write_file.reader().context.getEndPos() == try read_file.reader().context.getEndPos());
+    try testing.expect(written_idx.base_version == read_idx.base_version);
+    try testing.expect(written_idx.current_version == read_idx.current_version);
+    try testing.expect(written_idx.file_systems.len == read_idx.file_systems.len);
+
+    for (read_idx.file_systems) |vfs, i| {
+        try testing.expectEqualStrings(written_idx.file_systems[i].filename, vfs.filename);
+
+        for (vfs.files) |f, fi| {
+            try testing.expectEqualStrings(written_idx.file_systems[i].files[fi].filepath, f.filepath);
+            try testing.expect(written_idx.file_systems[i].files[fi].offset == f.offset);
+            try testing.expect(written_idx.file_systems[i].files[fi].size == f.size);
+            try testing.expect(written_idx.file_systems[i].files[fi].block_size == f.block_size);
+            try testing.expect(written_idx.file_systems[i].files[fi].is_deleted == f.is_deleted);
+            try testing.expect(written_idx.file_systems[i].files[fi].is_compressed == f.is_compressed);
+            try testing.expect(written_idx.file_systems[i].files[fi].is_encrypted == f.is_encrypted);
+            try testing.expect(written_idx.file_systems[i].files[fi].version == f.version);
+            try testing.expect(written_idx.file_systems[i].files[fi].checksum == f.checksum);
+        }
+    }
+}
