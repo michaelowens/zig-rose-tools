@@ -8,9 +8,9 @@ const testing = std.testing;
 pub const IDX = struct {
     const Self = @This();
 
-    base_version: i32,
-    current_version: i32,
-    file_systems: []VFSMetadata,
+    base_version: i32 = undefined,
+    current_version: i32 = undefined,
+    file_systems: []VFSMetadata = undefined,
 
     pub const VFSFile = struct {
         path: []u8,
@@ -35,11 +35,7 @@ pub const IDX = struct {
     };
 
     pub fn init() Self {
-        return .{
-            .base_version = 0,
-            .current_version = 0,
-            .file_systems = undefined,
-        };
+        return .{};
     }
 
     pub fn read(self: *Self, allocator: std.mem.Allocator, file: RoseFile) !void {
@@ -53,9 +49,7 @@ pub const IDX = struct {
         self.file_systems = try allocator.alloc(VFSMetadata, vfs_count);
 
         var i: usize = 0;
-        while (i < vfs_count) {
-            defer i += 1;
-
+        while (i < vfs_count) : (i += 1) {
             self.file_systems[i].filename = try file.readString(u16);
             const data_offset: u64 = try file.readInt(u32);
 
@@ -67,9 +61,7 @@ pub const IDX = struct {
             self.file_systems[i].files = try allocator.alloc(VFSFileMetadata, file_count);
 
             var f: usize = 0;
-            while (f < file_count) {
-                defer f += 1;
-
+            while (f < file_count) : (f += 1) {
                 self.file_systems[i].files[f] = .{
                     .filepath = try file.readString(u16),
                     .offset = try file.readInt(u32),

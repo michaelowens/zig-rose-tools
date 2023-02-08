@@ -34,5 +34,5 @@ pub fn main() !void {
         debug.print("{s}: {} sprites\n", .{ sprite_sheet.path, sprite_sheet.sprites.len });
     }
 
-    try tsi.write(rosefile);
+    //try tsi.write(rosefile);
 }

@@ -16,6 +16,7 @@ pub fn build(b: *std.Build) void {
     inline for (.{
         "idx",
         "tsi",
+        "zon",
     }) |example_name| {
         const example = b.addExecutable(.{
             .name = example_name,

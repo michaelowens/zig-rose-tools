@@ -10,7 +10,7 @@ const testing = std.testing;
 pub const TSI = struct {
     const Self = @This();
 
-    sprite_sheets: []SpriteSheet,
+    sprite_sheets: []SpriteSheet = undefined,
 
     pub const SpriteSheet = struct {
         path: []u8,
@@ -26,9 +26,7 @@ pub const TSI = struct {
     };
 
     pub fn init() Self {
-        return .{
-            .sprite_sheets = undefined,
-        };
+        return .{};
     }
 
     pub fn read(self: *Self, allocator: std.mem.Allocator, file: RoseFile) !void {
@@ -36,17 +34,14 @@ pub const TSI = struct {
         self.sprite_sheets = try allocator.alloc(SpriteSheet, sheet_count);
 
         var i: usize = 0;
-        while (i < sheet_count) {
-            defer i += 1;
+        while (i < sheet_count) : (i += 1) {
             self.sprite_sheets[i].path = try file.readString(u16);
             self.sprite_sheets[i].color_key = try file.readInt(u32);
         }
 
         _ = try file.readInt(u16); // total_sprite_count
         i = 0;
-        while (i < sheet_count) {
-            defer i += 1;
-
+        while (i < sheet_count) : (i += 1) {
             const sprite_count = try file.readInt(u16);
             self.sprite_sheets[i].sprites = try allocator.alloc(Sprite, sprite_count);
 

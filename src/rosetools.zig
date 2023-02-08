@@ -3,6 +3,7 @@ const fs = std.fs;
 
 pub const IDX = @import("files/idx.zig").IDX;
 pub const TSI = @import("files/tsi.zig").TSI;
+pub const ZON = @import("files/zon.zig").ZON;
 
 pub const RoseFile = struct {
     const Self = @This();
@@ -35,6 +36,19 @@ pub const RoseFile = struct {
 
     pub fn writeInt(self: Self, comptime T: type, value: T) !void {
         try self.writer.writeInt(T, value, self.config.endian);
+    }
+
+    pub fn readFloat(self: Self, comptime T: type) !T {
+        // there is probably a better way to do this
+        const intType = switch (T) {
+            f16 => i16,
+            f32 => i32,
+            f64 => i64,
+            f128 => i128,
+            else => return error.InvalidFloatType,
+        };
+        const int = try self.readInt(intType);
+        return @bitCast(T, int);
     }
 
     pub fn readVarString(self: Self, n: u64) ![]u8 {
@@ -89,6 +103,10 @@ pub const RoseFile = struct {
         try self.writeInt(T, value.y);
     }
 
+    pub fn readFloatVec2(self: Self, comptime T: type) !Vec2(T) {
+        return Vec2(T).init(try self.readFloat(T), try self.readFloat(T));
+    }
+
     pub fn readVec3(self: Self, comptime T: type) !Vec3(T) {
         return Vec3(T).init(try self.readInt(T), try self.readInt(T), try self.readInt(T));
     }
@@ -97,6 +115,10 @@ pub const RoseFile = struct {
         try self.writeInt(T, value.x);
         try self.writeInt(T, value.y);
         try self.writeInt(T, value.z);
+    }
+
+    pub fn readFloatVec3(self: Self, comptime T: type) !Vec3(T) {
+        return Vec3(T).init(try self.readFloat(T), try self.readFloat(T), try self.readFloat(T));
     }
 };
 

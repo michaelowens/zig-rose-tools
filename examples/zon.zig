@@ -3,7 +3,7 @@ const RoseTools = @import("rosetools");
 
 const debug = std.debug;
 const RoseFile = RoseTools.RoseFile;
-const IDX = RoseTools.IDX;
+const ZON = RoseTools.ZON;
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -25,19 +25,12 @@ pub fn main() !void {
 
     const rosefile = try RoseFile.init(allocator, file, .{});
 
-    var idx = IDX.init();
-    try idx.read(allocator, rosefile);
+    var zon = ZON.init();
+    try zon.read(allocator, rosefile);
 
-    debug.print("base version: {}\n", .{idx.base_version});
-    debug.print("current version: {}\n", .{idx.current_version});
-    debug.print("file systems: {}\n\n", .{idx.file_systems.len});
-
-    for (idx.file_systems) |vfs| {
-        debug.print("path: {s}\n", .{vfs.filename});
-        debug.print("files: {}\n", .{vfs.files.len});
-        debug.print("1st file: {s}\n", .{vfs.files[0].filepath});
-        debug.print("last file: {s}\n\n", .{vfs.files[vfs.files.len - 1].filepath});
-    }
-
-    //try idx.write(allocator, rosefile);
+    debug.print("type: {}\n", .{zon.zone_type});
+    debug.print("size: {}x{}\n", .{ zon.width, zon.height });
+    debug.print("grid count: {}\n", .{zon.grid_count});
+    debug.print("grid size: {}\n", .{zon.grid_size});
+    debug.print("tiles: {}\n", .{zon.tiles.len});
 }
