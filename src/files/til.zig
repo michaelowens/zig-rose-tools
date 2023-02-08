@@ -1,0 +1,73 @@
+// Terrain Tilemap
+
+const std = @import("std");
+const RoseFile = @import("../rosetools.zig").RoseFile;
+const fs = std.fs;
+const testing = std.testing;
+
+pub const TIL = struct {
+    const Self = @This();
+
+    width: i32 = undefined,
+    height: i32 = undefined,
+    tiles: [][]Tile = undefined,
+
+    const Tile = struct {
+        brush_id: u8,
+        tile_idx: u8,
+        tile_set: u8,
+        tile_id: i32,
+    };
+
+    pub fn init() Self {
+        return .{};
+    }
+
+    pub fn read(self: *Self, allocator: std.mem.Allocator, file: RoseFile) !void {
+        self.width = try file.readInt(i32);
+        self.height = try file.readInt(i32);
+        self.tiles = try allocator.alloc([]Tile, @intCast(usize, self.width));
+
+        var w: usize = 0;
+        while (w < self.width) : (w += 1) {
+            self.tiles[w] = try allocator.alloc(Tile, @intCast(usize, self.height));
+            var h: usize = 0;
+            while (h < self.height) : (h += 1) {
+                self.tiles[w][h].brush_id = try file.readInt(u8);
+                self.tiles[w][h].tile_idx = try file.readInt(u8);
+                self.tiles[w][h].tile_set = try file.readInt(u8);
+                self.tiles[w][h].tile_id = try file.readInt(i32);
+            }
+        }
+    }
+
+    pub fn write(self: *Self, file: RoseFile) !void {
+        try file.writeInt(i32, self.width);
+        try file.writeInt(i32, self.height);
+        for (self.tiles) |row| {
+            for (self.tiles[row]) |col| {
+                try file.writeInt(u8, self.tiles[row][col].brush_id);
+                try file.writeInt(u8, self.tiles[row][col].tile_idx);
+                try file.writeInt(u8, self.tiles[row][col].tile_set);
+                try file.writeInt(i32, self.tiles[row][col].tile_id);
+            }
+        }
+    }
+};
+
+test "reading TIL file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const file = try fs.cwd().openFile("test_files/31_30.TIL", .{});
+    defer file.close();
+
+    const rosefile = try RoseFile.init(allocator, file, .{});
+    const filesize = try rosefile.file.getEndPos();
+
+    var til = TIL.init();
+    try til.read(allocator, rosefile);
+
+    try testing.expect(filesize == try rosefile.file.getPos());
+}

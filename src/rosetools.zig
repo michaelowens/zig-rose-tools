@@ -2,6 +2,7 @@ const std = @import("std");
 const fs = std.fs;
 
 pub const IDX = @import("files/idx.zig").IDX;
+pub const TIL = @import("files/til.zig").TIL;
 pub const TSI = @import("files/tsi.zig").TSI;
 pub const ZON = @import("files/zon.zig").ZON;
 
