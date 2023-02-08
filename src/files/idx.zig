@@ -77,7 +77,7 @@ pub const IDX = struct {
         }
     }
 
-    pub fn write(self: Self, allocator: std.mem.Allocator, file: RoseFile) !void {
+    pub fn write(self: *Self, allocator: std.mem.Allocator, file: RoseFile) !void {
         try file.writer.context.seekTo(0);
         try file.writer.context.setEndPos(0);
         try file.writeInt(i32, self.base_version);

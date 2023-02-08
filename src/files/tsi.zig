@@ -59,7 +59,7 @@ pub const TSI = struct {
         }
     }
 
-    pub fn write(self: Self, file: RoseFile) !void {
+    pub fn write(self: *Self, file: RoseFile) !void {
         try file.writer.context.seekTo(0);
         try file.writer.context.setEndPos(0);
         try file.writeInt(u16, @intCast(u16, self.sprite_sheets.len));
