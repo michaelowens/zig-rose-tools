@@ -82,7 +82,7 @@ pub const RoseFile = struct {
         }
     }
 
-    pub fn writeString(self: Self, comptime T: type, value: []u8) !void {
+    pub fn writeString(self: Self, comptime T: type, value: []const u8) !void {
         try self.writeInt(T, @intCast(T, value.len));
         try self.writer.writeAll(value);
     }
