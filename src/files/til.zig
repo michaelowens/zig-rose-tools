@@ -42,6 +42,8 @@ pub const TIL = struct {
     }
 
     pub fn write(self: *Self, file: RoseFile) !void {
+        try file.writer.context.seekTo(0);
+        try file.writer.context.setEndPos(0);
         try file.writeInt(i32, self.width);
         try file.writeInt(i32, self.height);
         for (self.tiles) |_, row| {
