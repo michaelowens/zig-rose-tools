@@ -1,6 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
 
+pub const HIM = @import("files/him.zig").HIM;
 pub const IDX = @import("files/idx.zig").IDX;
 pub const TIL = @import("files/til.zig").TIL;
 pub const TSI = @import("files/tsi.zig").TSI;
@@ -39,17 +40,26 @@ pub const RoseFile = struct {
         try self.writer.writeInt(T, value, self.config.endian);
     }
 
-    pub fn readFloat(self: Self, comptime T: type) !T {
-        // there is probably a better way to do this
-        const intType = switch (T) {
+    // there is probably a better way to do this
+    fn floatToIntType(comptime T: type) !type {
+        return switch (T) {
             f16 => i16,
             f32 => i32,
             f64 => i64,
             f128 => i128,
             else => return error.InvalidFloatType,
         };
+    }
+
+    pub fn readFloat(self: Self, comptime T: type) !T {
+        const intType = try floatToIntType(T);
         const int = try self.readInt(intType);
         return @bitCast(T, int);
+    }
+
+    pub fn writeFloat(self: Self, comptime T: type, value: T) !void {
+        const intType = try floatToIntType(T);
+        try self.writeInt(intType, @bitCast(intType, value));
     }
 
     pub fn readVarString(self: Self, n: u64) ![]u8 {

@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) void {
 
     const examples_step = b.step("examples", "Build examples");
     inline for (.{
+        "him",
         "idx",
         "til",
         "tsi",
