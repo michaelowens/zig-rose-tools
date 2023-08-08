@@ -73,7 +73,7 @@ pub const TSI = struct {
 
         try file.writeInt(u16, total_sprite_count);
 
-        for (self.sprite_sheets) |sprite_sheet, i| {
+        for (self.sprite_sheets, 0..) |sprite_sheet, i| {
             try file.writeInt(u16, @intCast(u16, sprite_sheet.sprites.len));
             for (sprite_sheet.sprites) |sprite| {
                 try file.writeInt(u16, @intCast(u16, i));
@@ -129,11 +129,11 @@ test "writing TSI file" {
     try testing.expect(try write_file.reader().context.getEndPos() == try read_file.reader().context.getEndPos());
     try testing.expect(written_idx.sprite_sheets.len == read_idx.sprite_sheets.len);
 
-    for (read_idx.sprite_sheets) |sprite_sheet, i| {
+    for (read_idx.sprite_sheets, 0..) |sprite_sheet, i| {
         try testing.expectEqualStrings(sprite_sheet.path, written_idx.sprite_sheets[i].path);
         try testing.expect(written_idx.sprite_sheets[i].color_key == sprite_sheet.color_key);
 
-        for (sprite_sheet.sprites) |sprite, si| {
+        for (sprite_sheet.sprites, 0..) |sprite, si| {
             try testing.expectEqualStrings(sprite.name, written_idx.sprite_sheets[i].sprites[si].name);
             try testing.expectEqualDeep(sprite.start_point, written_idx.sprite_sheets[i].sprites[si].start_point);
             try testing.expectEqualDeep(sprite.end_point, written_idx.sprite_sheets[i].sprites[si].end_point);

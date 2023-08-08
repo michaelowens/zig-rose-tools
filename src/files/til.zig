@@ -46,8 +46,8 @@ pub const TIL = struct {
         try file.writer.context.setEndPos(0);
         try file.writeInt(i32, self.width);
         try file.writeInt(i32, self.height);
-        for (self.tiles) |_, row| {
-            for (self.tiles[row]) |_, col| {
+        for (self.tiles, 0..) |_, row| {
+            for (self.tiles[row], 0..) |_, col| {
                 try file.writeInt(u8, self.tiles[row][col].brush_id);
                 try file.writeInt(u8, self.tiles[row][col].tile_idx);
                 try file.writeInt(u8, self.tiles[row][col].tile_set);
@@ -99,8 +99,8 @@ test "writing TIL file" {
     try testing.expect(try write_file.reader().context.getEndPos() == try read_file.reader().context.getEndPos());
     try testing.expect(written_idx.width == read_idx.width);
     try testing.expect(written_idx.height == read_idx.height);
-    for (read_idx.tiles) |_, row| {
-        for (read_idx.tiles[row]) |tile, col| {
+    for (read_idx.tiles, 0..) |_, row| {
+        for (read_idx.tiles[row], 0..) |tile, col| {
             try testing.expect(written_idx.tiles[row][col].brush_id == tile.brush_id);
             try testing.expect(written_idx.tiles[row][col].tile_idx == tile.tile_idx);
             try testing.expect(written_idx.tiles[row][col].tile_set == tile.tile_set);

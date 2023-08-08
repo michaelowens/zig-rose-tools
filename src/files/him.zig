@@ -143,20 +143,20 @@ test "writing HIM file" {
     try testing.expect(written_him.grid_count == read_him.grid_count);
     try testing.expect(written_him.scale == read_him.scale);
 
-    for (read_him.heights) |_, row| {
-        for (read_him.heights[row]) |value, col| {
+    for (read_him.heights, 0..) |_, row| {
+        for (read_him.heights[row], 0..) |value, col| {
             try testing.expect(written_him.heights[row][col] == value);
         }
     }
 
-    for (read_him.patches) |_, row| {
-        for (read_him.patches[row]) |value, col| {
+    for (read_him.patches, 0..) |_, row| {
+        for (read_him.patches[row], 0..) |value, col| {
             try testing.expect(written_him.patches[row][col].max == value.max);
             try testing.expect(written_him.patches[row][col].min == value.min);
         }
     }
 
-    for (read_him.quad_patches) |value, row| {
+    for (read_him.quad_patches, 0..) |value, row| {
         try testing.expect(written_him.quad_patches[row].max == value.max);
         try testing.expect(written_him.quad_patches[row].min == value.min);
     }

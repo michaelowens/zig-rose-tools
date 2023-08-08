@@ -51,12 +51,12 @@ pub const IDX = struct {
         var i: usize = 0;
         while (i < vfs_count) : (i += 1) {
             self.file_systems[i].filename = try file.readString(u16);
-            const data_offset: u64 = try file.readInt(u32);
+            const data_offset: u32 = try file.readInt(u32);
 
             try file.reader.context.seekTo(data_offset);
             const file_count = try file.readInt(u32);
-            _ = try file.readInt(u32); // delete_count
-            _ = try file.readInt(u32); // start_offset
+            _ = try file.readInt(u16); // delete_count
+            _ = try file.readInt(u16); // start_offset
 
             self.file_systems[i].files = try allocator.alloc(VFSFileMetadata, file_count);
 
@@ -67,9 +67,10 @@ pub const IDX = struct {
                     .offset = try file.readInt(u32),
                     .size = try file.readInt(u32),
                     .block_size = try file.readInt(u32),
-                    .is_deleted = try file.readBool(),
-                    .is_compressed = try file.readBool(),
-                    .is_encrypted = try file.readBool(),
+                    // the following 3 bytes seemed to have been removed
+                    .is_deleted = false, //try file.readBool(),
+                    .is_compressed = false, //try file.readBool(),
+                    .is_encrypted = false, //try file.readBool(),
                     .version = try file.readInt(u32),
                     .checksum = try file.readInt(u32),
                 };
@@ -87,13 +88,13 @@ pub const IDX = struct {
         var file_system_offsets = try allocator.alloc(u64, self.file_systems.len);
         defer allocator.free(file_system_offsets);
 
-        for (self.file_systems) |vfs, i| {
+        for (self.file_systems, 0..) |vfs, i| {
             try file.writeString(u16, vfs.filename);
             file_system_offsets[i] = try file.writer.context.getPos();
             try file.writeInt(u32, 0);
         }
 
-        for (self.file_systems) |vfs, i| {
+        for (self.file_systems, 0..) |vfs, i| {
             const file_offset = try file.writer.context.getPos();
 
             try file.writer.context.seekTo(file_system_offsets[i]);
@@ -171,10 +172,10 @@ test "writing IDX file" {
     try testing.expect(written_idx.current_version == read_idx.current_version);
     try testing.expect(written_idx.file_systems.len == read_idx.file_systems.len);
 
-    for (read_idx.file_systems) |vfs, i| {
+    for (read_idx.file_systems, 0..) |vfs, i| {
         try testing.expectEqualStrings(written_idx.file_systems[i].filename, vfs.filename);
 
-        for (vfs.files) |f, fi| {
+        for (vfs.files, 0..) |f, fi| {
             try testing.expectEqualStrings(written_idx.file_systems[i].files[fi].filepath, f.filepath);
             try testing.expect(written_idx.file_systems[i].files[fi].offset == f.offset);
             try testing.expect(written_idx.file_systems[i].files[fi].size == f.size);

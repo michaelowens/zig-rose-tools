@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
         "idx",
         "til",
         "tsi",
+        "vfs",
         "zon",
     }) |example_name| {
         const example = b.addExecutable(.{
