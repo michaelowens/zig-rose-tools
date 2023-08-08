@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         });
         example.addAnonymousModule("rosetools", .{ .source_file = .{ .path = "src/rosetools.zig" } });
-        example.install();
+        b.installArtifact(example);
         examples_step.dependOn(&example.step);
     }
 

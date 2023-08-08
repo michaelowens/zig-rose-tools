@@ -54,12 +54,12 @@ pub const RoseFile = struct {
     pub fn readFloat(self: Self, comptime T: type) !T {
         const intType = try floatToIntType(T);
         const int = try self.readInt(intType);
-        return @bitCast(T, int);
+        return @as(T, @bitCast(int));
     }
 
     pub fn writeFloat(self: Self, comptime T: type, value: T) !void {
         const intType = try floatToIntType(T);
-        try self.writeInt(intType, @bitCast(intType, value));
+        try self.writeInt(intType, @as(intType, @bitCast(value)));
     }
 
     pub fn readVarString(self: Self, n: u64) ![]u8 {
@@ -84,7 +84,7 @@ pub const RoseFile = struct {
     }
 
     pub fn writeVarString(self: Self, n: u64, value: []u8) !void {
-        const char_count = std.math.min(n, value.len);
+        const char_count = @min(n, value.len);
         var i: usize = 0;
         while (i < n) {
             try self.writeInt(u8, if (i < char_count) value[i] else 0);
@@ -93,7 +93,7 @@ pub const RoseFile = struct {
     }
 
     pub fn writeString(self: Self, comptime T: type, value: []const u8) !void {
-        try self.writeInt(T, @intCast(T, value.len));
+        try self.writeInt(T, @as(T, @intCast(value.len)));
         try self.writer.writeAll(value);
     }
 

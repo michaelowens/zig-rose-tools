@@ -62,21 +62,21 @@ pub const TSI = struct {
     pub fn write(self: *Self, file: RoseFile) !void {
         try file.writer.context.seekTo(0);
         try file.writer.context.setEndPos(0);
-        try file.writeInt(u16, @intCast(u16, self.sprite_sheets.len));
+        try file.writeInt(u16, @as(u16, @intCast(self.sprite_sheets.len)));
 
         var total_sprite_count: u16 = 0;
         for (self.sprite_sheets) |sprite_sheet| {
             try file.writeString(u16, sprite_sheet.path);
             try file.writeInt(u32, sprite_sheet.color_key);
-            total_sprite_count += @intCast(u16, sprite_sheet.sprites.len);
+            total_sprite_count += @as(u16, @intCast(sprite_sheet.sprites.len));
         }
 
         try file.writeInt(u16, total_sprite_count);
 
         for (self.sprite_sheets, 0..) |sprite_sheet, i| {
-            try file.writeInt(u16, @intCast(u16, sprite_sheet.sprites.len));
+            try file.writeInt(u16, @as(u16, @intCast(sprite_sheet.sprites.len)));
             for (sprite_sheet.sprites) |sprite| {
-                try file.writeInt(u16, @intCast(u16, i));
+                try file.writeInt(u16, @as(u16, @intCast(i)));
                 try file.writeVec2(u32, sprite.start_point);
                 try file.writeVec2(u32, sprite.end_point);
                 try file.writeInt(u32, sprite.color);

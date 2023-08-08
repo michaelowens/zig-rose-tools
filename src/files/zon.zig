@@ -112,26 +112,26 @@ pub const ZON = struct {
         }
 
         for (blocks) |block| {
-            const block_type = @intToEnum(ZoneBlockType, block[0]);
+            const block_type = @as(ZoneBlockType, @enumFromInt(block[0]));
             const block_offset = block[1];
 
-            try file.reader.context.seekTo(@intCast(u64, block_offset));
+            try file.reader.context.seekTo(@as(u64, @intCast(block_offset)));
 
             switch (block_type) {
                 .BasicInfo => {
-                    self.zone_type = @intToEnum(ZoneType, try file.readInt(u32));
+                    self.zone_type = @as(ZoneType, @enumFromInt(try file.readInt(u32)));
                     self.width = try file.readInt(i32);
                     self.height = try file.readInt(i32);
                     self.grid_count = try file.readInt(i32);
                     self.grid_size = try file.readFloat(f32);
                     self.start_position = try file.readVec2(i32);
 
-                    self.positions = try allocator.alloc([]ZonePosition, @intCast(usize, self.width));
+                    self.positions = try allocator.alloc([]ZonePosition, @as(usize, @intCast(self.width)));
 
                     var w: usize = 0;
                     var h: usize = 0;
                     while (w < self.width) : (w += 1) {
-                        self.positions[w] = try allocator.alloc(ZonePosition, @intCast(usize, self.height));
+                        self.positions[w] = try allocator.alloc(ZonePosition, @as(usize, @intCast(self.height)));
                         while (h < self.height) : (h += 1) {
                             self.positions[w][h].is_used = try file.readBool();
                             self.positions[w][h].position = try file.readFloatVec2(f32);
@@ -140,7 +140,7 @@ pub const ZON = struct {
                 },
                 .EventPoints => {
                     const count = try file.readInt(i32);
-                    self.event_points = try allocator.alloc(ZoneEventPoint, @intCast(usize, count));
+                    self.event_points = try allocator.alloc(ZoneEventPoint, @as(usize, @intCast(count)));
 
                     i = 0;
                     while (i < count) : (i += 1) {
@@ -150,7 +150,7 @@ pub const ZON = struct {
                 },
                 .Textures => {
                     const count = try file.readInt(i32);
-                    self.textures = try allocator.alloc([]u8, @intCast(usize, count));
+                    self.textures = try allocator.alloc([]u8, @as(usize, @intCast(count)));
 
                     i = 0;
                     while (i < count) : (i += 1) {
@@ -159,7 +159,7 @@ pub const ZON = struct {
                 },
                 .Tiles => {
                     const count = try file.readInt(i32);
-                    self.tiles = try allocator.alloc(ZoneTile, @intCast(usize, count));
+                    self.tiles = try allocator.alloc(ZoneTile, @as(usize, @intCast(count)));
 
                     i = 0;
                     while (i < count) : (i += 1) {
@@ -168,7 +168,7 @@ pub const ZON = struct {
                         self.tiles[i].offset1 = try file.readInt(i32);
                         self.tiles[i].offset2 = try file.readInt(i32);
                         self.tiles[i].blend = try file.readInt(i32) != 0;
-                        self.tiles[i].rotation = @intToEnum(ZoneTileRotation, try file.readInt(i32));
+                        self.tiles[i].rotation = @as(ZoneTileRotation, @enumFromInt(try file.readInt(i32)));
                         self.tiles[i].tile_type = try file.readInt(i32);
                     }
                 },

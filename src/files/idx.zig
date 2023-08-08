@@ -83,7 +83,7 @@ pub const IDX = struct {
         try file.writer.context.setEndPos(0);
         try file.writeInt(i32, self.base_version);
         try file.writeInt(i32, self.current_version);
-        try file.writeInt(u32, @intCast(u32, self.file_systems.len));
+        try file.writeInt(u32, @as(u32, @intCast(self.file_systems.len)));
 
         var file_system_offsets = try allocator.alloc(u64, self.file_systems.len);
         defer allocator.free(file_system_offsets);
@@ -98,7 +98,7 @@ pub const IDX = struct {
             const file_offset = try file.writer.context.getPos();
 
             try file.writer.context.seekTo(file_system_offsets[i]);
-            try file.writeInt(u32, @intCast(u32, file_offset));
+            try file.writeInt(u32, @as(u32, @intCast(file_offset)));
             try file.writer.context.seekTo(file_offset);
 
             var deleted_count: u32 = 0;
@@ -108,7 +108,7 @@ pub const IDX = struct {
                 }
             }
 
-            try file.writeInt(u32, @intCast(u32, vfs.files.len));
+            try file.writeInt(u32, @as(u32, @intCast(vfs.files.len)));
             try file.writeInt(u32, deleted_count);
             try file.writeInt(u32, vfs.files[0].offset);
 

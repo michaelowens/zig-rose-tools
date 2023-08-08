@@ -26,11 +26,11 @@ pub const TIL = struct {
     pub fn read(self: *Self, allocator: std.mem.Allocator, file: RoseFile) !void {
         self.width = try file.readInt(i32);
         self.height = try file.readInt(i32);
-        self.tiles = try allocator.alloc([]Tile, @intCast(usize, self.width));
+        self.tiles = try allocator.alloc([]Tile, @as(usize, @intCast(self.width)));
 
         var w: usize = 0;
         while (w < self.width) : (w += 1) {
-            self.tiles[w] = try allocator.alloc(Tile, @intCast(usize, self.height));
+            self.tiles[w] = try allocator.alloc(Tile, @as(usize, @intCast(self.height)));
             var h: usize = 0;
             while (h < self.height) : (h += 1) {
                 self.tiles[w][h].brush_id = try file.readInt(u8);

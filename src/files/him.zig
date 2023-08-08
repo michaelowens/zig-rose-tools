@@ -30,11 +30,11 @@ pub const HIM = struct {
         self.height = try file.readInt(i32);
         self.grid_count = try file.readInt(i32);
         self.scale = try file.readFloat(f32);
-        self.heights = try allocator.alloc([]f32, @intCast(usize, self.height));
+        self.heights = try allocator.alloc([]f32, @intCast(self.height));
 
         var h: usize = 0;
         while (h < self.height) : (h += 1) {
-            self.heights[h] = try allocator.alloc(f32, @intCast(usize, self.width));
+            self.heights[h] = try allocator.alloc(f32, @intCast(self.width));
             var w: usize = 0;
             while (w < self.width) : (w += 1) {
                 self.heights[h][w] = try file.readFloat(f32);
@@ -56,7 +56,7 @@ pub const HIM = struct {
         }
 
         const quad_patch_count = try file.readInt(i32);
-        self.quad_patches = try allocator.alloc(HeightmapPatch, @intCast(usize, quad_patch_count));
+        self.quad_patches = try allocator.alloc(HeightmapPatch, @as(usize, @intCast(quad_patch_count)));
 
         var i: usize = 0;
         while (i < quad_patch_count) : (i += 1) {
@@ -80,7 +80,7 @@ pub const HIM = struct {
         }
 
         try file.writeString(u8, "quad");
-        try file.writeInt(i32, @intCast(i32, self.patches.len * self.patches[0].len));
+        try file.writeInt(i32, @as(i32, @intCast(self.patches.len * self.patches[0].len)));
 
         for (self.patches) |row| {
             for (row) |col| {
@@ -89,7 +89,7 @@ pub const HIM = struct {
             }
         }
 
-        try file.writeInt(i32, @intCast(i32, self.quad_patches.len));
+        try file.writeInt(i32, @as(i32, @intCast(self.quad_patches.len)));
 
         for (self.quad_patches) |quad_patch| {
             try file.writeFloat(f32, quad_patch.max);
