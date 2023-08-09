@@ -24,19 +24,11 @@ pub fn main() !void {
     const file = try std.fs.openFileAbsolute(abs_idx_file_path, .{ .mode = .read_write });
     defer file.close();
 
-    debug.print("abs_idx_file_path: {s}\n", .{abs_idx_file_path});
-
     const abs_idx_dir = std.fs.path.dirname(abs_idx_file_path);
-    debug.print("abs_idx_dir: {s}\n", .{abs_idx_dir.?});
-
     const rosefile = try RoseFile.init(allocator, file, .{});
 
     var idx = IDX.init();
     try idx.read(allocator, rosefile);
-
-    debug.print("base version: {}\n", .{idx.base_version});
-    debug.print("current version: {}\n", .{idx.current_version});
-    debug.print("file systems: {}\n\n", .{idx.file_systems.len});
 
     try std.fs.makeDirAbsolute(output_path.?);
     var dir = try std.fs.openDirAbsolute(output_path.?, .{ .no_follow = true });
