@@ -44,7 +44,7 @@ pub fn addPath(allocator: std.mem.Allocator, root: *Node, path: []const u8, node
             }
 
             try node.children.append(newNode);
-            node = &newNode;
+            node = &node.children.items[node.children.items.len - 1];
         } else {
             // std.log.info("child exists: {s}", .{token});
             node = &node.children.items[existingChildIndex.?];
