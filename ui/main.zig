@@ -66,6 +66,9 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
         .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
     );
 
+    const font_file_contents = @embedFile("Roboto-Regular.ttf");
+    _ = zgui.io.addFontFromMemory(font_file_contents, 16);
+
     const draw_list = zgui.createDrawList();
 
     const demo = try allocator.create(DemoState);
