@@ -53,16 +53,16 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
 
     zgui.init(allocator);
 
-    // This needs to be called *after* adding your custom fonts.
+    const font_file_contents = @embedFile("Roboto-Regular.ttf");
+    _ = zgui.io.addFontFromMemory(font_file_contents, 16);
+
+    // This needs to be called *after* adding custom fonts.
     zgui.backend.initWithConfig(
         window,
         gctx.device,
         @intFromEnum(zgpu.GraphicsContext.swapchain_format),
         .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
     );
-
-    const font_file_contents = @embedFile("Roboto-Regular.ttf");
-    _ = zgui.io.addFontFromMemory(font_file_contents, 16);
 
     const draw_list = zgui.createDrawList();
 
