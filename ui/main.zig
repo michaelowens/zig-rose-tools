@@ -40,7 +40,7 @@ const FileExtension = enum {
     }
 };
 
-const DemoState = struct {
+const AppState = struct {
     gctx: *zgpu.GraphicsContext,
     draw_list: zgui.DrawList,
     vfs_tree: Tree.Node,
@@ -48,7 +48,7 @@ const DemoState = struct {
     selected_file: SelectedFile,
 };
 
-fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
+fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*AppState {
     const gctx = try zgpu.GraphicsContext.create(allocator, window, .{});
 
     zgui.init(allocator);
@@ -66,8 +66,8 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
 
     const draw_list = zgui.createDrawList();
 
-    const demo = try allocator.create(DemoState);
-    demo.* = .{
+    const app = try allocator.create(AppState);
+    app.* = .{
         .gctx = gctx,
         .draw_list = draw_list,
         .vfs_tree = Tree.Node{
@@ -80,21 +80,21 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
         .selected_file = .None,
     };
 
-    return demo;
+    return app;
 }
 
-fn destroy(allocator: std.mem.Allocator, demo: *DemoState) void {
+fn destroy(allocator: std.mem.Allocator, app: *AppState) void {
     zgui.backend.deinit();
-    zgui.destroyDrawList(demo.draw_list);
+    zgui.destroyDrawList(app.draw_list);
     zgui.deinit();
-    demo.gctx.destroy(allocator);
-    allocator.destroy(demo);
+    app.gctx.destroy(allocator);
+    allocator.destroy(app);
 }
 
-fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
+fn update(allocator: std.mem.Allocator, app: *AppState) !void {
     zgui.backend.newFrame(
-        demo.gctx.swapchain_descriptor.width,
-        demo.gctx.swapchain_descriptor.height,
+        app.gctx.swapchain_descriptor.width,
+        app.gctx.swapchain_descriptor.height,
     );
 
     zgui.setNextWindowPos(.{
@@ -104,7 +104,7 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
     });
     zgui.setNextWindowSize(.{
         .w = 300,
-        .h = @floatFromInt(demo.gctx.swapchain_descriptor.height),
+        .h = @floatFromInt(app.gctx.swapchain_descriptor.height),
     });
 
     // Sidebar area
@@ -123,12 +123,11 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
         zgui.sameLine(.{});
         zgui.text(
             "{d:.3} ms/frame ({d:.1} fps)",
-            .{ demo.gctx.stats.average_cpu_time, demo.gctx.stats.fps },
+            .{ app.gctx.stats.average_cpu_time, app.gctx.stats.fps },
         );
 
         if (zgui.button("Open file", .{})) {
-            std.log.info("open file", .{});
-            try openFile(allocator, demo);
+            try openFile(allocator, app);
         }
 
         if (zgui.beginChild("FileTree", .{
@@ -137,7 +136,7 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
                 // .always_vertical_scrollbar = true,
             },
         })) {
-            try drawFiles(allocator, &demo.vfs_tree, demo);
+            try drawFiles(allocator, &app.vfs_tree, app);
         }
         defer zgui.endChild();
     }
@@ -150,8 +149,8 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
         .cond = .always,
     });
     zgui.setNextWindowSize(.{
-        .w = @floatFromInt(demo.gctx.swapchain_descriptor.width - 300),
-        .h = @floatFromInt(demo.gctx.swapchain_descriptor.height),
+        .w = @floatFromInt(app.gctx.swapchain_descriptor.width - 300),
+        .h = @floatFromInt(app.gctx.swapchain_descriptor.height),
     });
 
     if (zgui.begin("Main", .{
@@ -164,13 +163,13 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
             .no_scroll_with_mouse = true,
         },
     })) {
-        switch (demo.selected_file) {
+        switch (app.selected_file) {
             .None => {},
             .Unsupported => {
                 zgui.text("There is no preview for this file.", .{});
             },
             .Image => |img| {
-                const tex_id = demo.gctx.lookupResource(img.texture_view).?;
+                const tex_id = app.gctx.lookupResource(img.texture_view).?;
 
                 zgui.image(tex_id, .{
                     .w = @floatFromInt(img.dimensions.width),
@@ -192,9 +191,9 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
     zgui.end();
 }
 
-fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !void {
+fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, app: *AppState) !void {
     const recursor = struct {
-        fn search(allocatorr: std.mem.Allocator, node: *const Tree.Node, demoo: *DemoState) !void {
+        fn search(allocator_inner: std.mem.Allocator, node: *const Tree.Node, app_inner: *AppState) !void {
             for (node.children.items) |item| {
                 if (item.nodeType == .Folder) {
                     if (zgui.treeNodeFlags(item.path, .{
@@ -203,7 +202,7 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                         .span_full_width = true,
                         .no_tree_push_on_open = false,
                     })) {
-                        try search(allocatorr, &item, demoo);
+                        try search(allocator_inner, &item, app_inner);
                         zgui.treePop();
                     }
                 }
@@ -212,7 +211,7 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
             for (node.children.items) |item| {
                 if (item.nodeType == .File) {
                     var selected = false;
-                    if (demoo.selected_node) |sn| {
+                    if (app_inner.selected_node) |sn| {
                         selected = std.meta.eql(sn, item);
                     }
                     if (zgui.selectable(item.path, .{
@@ -223,15 +222,15 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                         const vfs_file_reader = vfs_file.reader();
 
                         try vfs_file_reader.context.seekTo(item.meta.?.offset);
-                        var file_contents = try allocatorr.alloc(u8, item.meta.?.size);
+                        var file_contents = try allocator_inner.alloc(u8, item.meta.?.size);
                         _ = try vfs_file_reader.read(file_contents);
 
                         const extension = FileExtension.fromPath(item.path);
 
                         switch (extension) {
                             .DDS => {
-                                demoo.selected_node = item;
-                                const teststr = try allocatorr.dupeZ(u8, file_contents);
+                                app_inner.selected_node = item;
+                                const teststr = try allocator_inner.dupeZ(u8, file_contents);
 
                                 var img = c.dds_load_from_memory(teststr, @as(c_long, @intCast(item.meta.?.size)));
                                 const image_dimensions = .{
@@ -239,7 +238,7 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                     .height = img.*.header.height,
                                 };
 
-                                const texture = demoo.gctx.createTexture(.{
+                                const texture = app_inner.gctx.createTexture(.{
                                     .size = image_dimensions,
                                     .format = .rgba8_unorm,
                                     .usage = .{
@@ -249,8 +248,8 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                     },
                                 });
 
-                                const texture_view = demoo.gctx.createTextureView(texture, .{});
-                                demoo.selected_file = .{
+                                const texture_view = app_inner.gctx.createTextureView(texture, .{});
+                                app_inner.selected_file = .{
                                     .Image = .{
                                         .texture_view = texture_view,
                                         .dimensions = image_dimensions,
@@ -258,15 +257,15 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                 };
 
                                 var pixelsSlice: []u8 = img.*.pixels[0 .. (img.*.header.width * img.*.header.height) * 4];
-                                var data = std.ArrayList(u8).init(allocatorr);
+                                var data = std.ArrayList(u8).init(allocator_inner);
                                 var window_size = img.*.header.width * 4;
                                 var it = std.mem.window(u8, pixelsSlice, window_size, window_size);
                                 while (it.next()) |w| {
                                     try data.insertSlice(0, w);
                                 }
 
-                                demoo.gctx.queue.writeTexture(
-                                    .{ .texture = demoo.gctx.lookupResource(texture).? },
+                                app_inner.gctx.queue.writeTexture(
+                                    .{ .texture = app_inner.gctx.lookupResource(texture).? },
                                     .{
                                         .bytes_per_row = img.*.header.width * 4,
                                         .rows_per_image = img.*.header.height,
@@ -277,12 +276,12 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                 );
                             },
                             .LUA, .XML, .CSS, .HTML => {
-                                demoo.selected_node = item;
-                                demoo.selected_file = .{ .Text = file_contents };
+                                app_inner.selected_node = item;
+                                app_inner.selected_file = .{ .Text = file_contents };
                             },
                             .Unknown => {
-                                demoo.selected_node = item;
-                                demoo.selected_file = .Unsupported;
+                                app_inner.selected_node = item;
+                                app_inner.selected_file = .Unsupported;
                             },
                         }
                     }
@@ -291,11 +290,11 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
         }
     }.search;
 
-    try recursor(allocator, tree, demo);
+    try recursor(allocator, tree, app);
 }
 
-fn draw(demo: *DemoState) void {
-    const gctx = demo.gctx;
+fn draw(app: *AppState) void {
+    const gctx = app.gctx;
 
     const swapchain_texv = gctx.swapchain.getCurrentTextureView();
     defer swapchain_texv.release();
@@ -334,7 +333,7 @@ pub fn main() !void {
     }
 
     const window = zglfw.Window.create(800, 400, window_title, null) catch {
-        std.log.err("Failed to create demo window.", .{});
+        std.log.err("Failed to create window.", .{});
         return;
     };
     defer window.destroy();
@@ -347,20 +346,20 @@ pub fn main() !void {
     zstbi.init(allocator);
     defer zstbi.deinit();
 
-    const demo = create(allocator, window) catch {
-        std.log.err("Failed to initialize the demo.", .{});
+    const app = create(allocator, window) catch {
+        std.log.err("Failed to initialize the app.", .{});
         return;
     };
-    defer destroy(allocator, demo);
+    defer destroy(allocator, app);
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        try update(allocator, demo);
-        draw(demo);
+        try update(allocator, app);
+        draw(app);
     }
 }
 
-fn openFile(allocator: std.mem.Allocator, demo: *DemoState) !void {
+fn openFile(allocator: std.mem.Allocator, app: *AppState) !void {
     const path = "D:\\Games\\ROSE Online\\data.idx";
     const abs_file_path = try std.fs.realpathAlloc(allocator, path);
     const file = try std.fs.openFileAbsolute(abs_file_path, .{ .mode = .read_write });
@@ -385,6 +384,6 @@ fn openFile(allocator: std.mem.Allocator, demo: *DemoState) !void {
                 .size = vfs_file_metadata.size,
             });
         }
-        try demo.vfs_tree.children.append(vfsNode);
+        try app.vfs_tree.children.append(vfsNode);
     }
 }
