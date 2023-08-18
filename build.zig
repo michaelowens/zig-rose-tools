@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) void {
 
     const ui_step = b.step("ui", "UI build");
     const ui = b.addExecutable(.{
-        .name = "ui",
+        .name = "rosetools-gui",
         .root_source_file = .{ .path = "ui/main.zig" },
         .target = target,
         .optimize = optimize,
