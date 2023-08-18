@@ -12,7 +12,7 @@ const RoseTools = @import("rosetools");
 const RoseFile = RoseTools.RoseFile;
 const IDX = RoseTools.IDX;
 
-const window_title = "zig-rose-tools gui (wgpu)";
+const window_title = "rose-tools gui";
 
 const SelectedFile = union(enum) {
     None: void,
@@ -21,6 +21,7 @@ const SelectedFile = union(enum) {
         dimensions: struct { width: u32, height: u32 },
     },
     Text: []u8,
+    Unsupported: void,
 };
 
 const FileExtension = enum {
@@ -167,6 +168,9 @@ fn update(allocator: std.mem.Allocator, demo: *DemoState) !void {
     })) {
         switch (demo.selected_file) {
             .None => {},
+            .Unsupported => {
+                zgui.text("There is no preview for this file.", .{});
+            },
             .Image => |img| {
                 const tex_id = demo.gctx.lookupResource(img.texture_view).?;
 
@@ -194,7 +198,6 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
     const recursor = struct {
         fn search(allocatorr: std.mem.Allocator, node: *const Tree.Node, demoo: *DemoState) !void {
             for (node.children.items) |item| {
-                // std.log.info("{s} is {any}", .{ item.path, item.nodeType });
                 if (item.nodeType == .Folder) {
                     if (zgui.treeNodeFlags(item.path, .{
                         // .open_on_double_click = true,
@@ -209,9 +212,7 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
             }
 
             for (node.children.items) |item| {
-                // std.log.info("{s} is {any}", .{ item.path, item.nodeType });
                 if (item.nodeType == .File) {
-                    // TODO: fix selected
                     var selected = false;
                     if (demoo.selected_node) |sn| {
                         selected = std.meta.eql(sn, item);
@@ -219,9 +220,6 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                     if (zgui.selectable(item.path, .{
                         .selected = selected,
                     })) {
-                        std.log.info("open file {s}", .{item.path});
-                        std.log.info("offset: {any} - size: {any}", .{ item.meta.?.offset, item.meta.?.size });
-
                         const vfs_file = try std.fs.openFileAbsolute("D:\\Games\\ROSE Online\\rose.vfs", .{});
                         defer vfs_file.close();
                         const vfs_file_reader = vfs_file.reader();
@@ -238,8 +236,6 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                 const teststr = try allocatorr.dupeZ(u8, file_contents);
 
                                 var img = c.dds_load_from_memory(teststr, @as(c_long, @intCast(item.meta.?.size)));
-                                std.log.info("got image: {any}x{any}", .{ img.*.header.width, img.*.header.height });
-
                                 const image_dimensions = .{
                                     .width = img.*.header.width,
                                     .height = img.*.header.height,
@@ -286,19 +282,12 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
                                 demoo.selected_node = item;
                                 demoo.selected_file = .{ .Text = file_contents };
                             },
-                            .Unknown => {},
+                            .Unknown => {
+                                demoo.selected_node = item;
+                                demoo.selected_file = .Unsupported;
+                            },
                         }
                     }
-                    // if (zgui.treeNodeFlags(item.path, .{
-                    //     // .open_on_double_click = true,
-                    //     .span_avail_width = true,
-                    //     .span_full_width = true,
-                    //     .no_tree_push_on_open = true,
-                    //     .leaf = true,
-                    // })) {
-                    //     // std.log.info("open file {s}", .{item.path});
-                    //     // zgui.treePop();
-                    // }
                 }
             }
         }
@@ -309,8 +298,6 @@ fn drawFiles(allocator: std.mem.Allocator, tree: *Tree.Node, demo: *DemoState) !
 
 fn draw(demo: *DemoState) void {
     const gctx = demo.gctx;
-    //const fb_width = gctx.swapchain_descriptor.width;
-    //const fb_height = gctx.swapchain_descriptor.height;
 
     const swapchain_texv = gctx.swapchain.getCurrentTextureView();
     defer swapchain_texv.release();
@@ -386,14 +373,8 @@ fn openFile(allocator: std.mem.Allocator, demo: *DemoState) !void {
 
     var idx = IDX.init();
     try idx.read(allocator, rosefile);
-    std.log.info("file systems: {}\n", .{idx.file_systems.len});
 
     for (idx.file_systems) |vfs| {
-        std.log.info("path: {s}", .{vfs.filename});
-        std.log.info("files: {}", .{vfs.files.len});
-        std.log.info("1st file: {s}", .{vfs.files[0].filepath});
-        std.log.info("last file: {s}\n", .{vfs.files[vfs.files.len - 1].filepath});
-
         var vfsNode = Tree.Node{
             .path = try allocator.dupeZ(u8, vfs.filename),
             .nodeType = .Folder,
@@ -409,21 +390,4 @@ fn openFile(allocator: std.mem.Allocator, demo: *DemoState) !void {
         }
         try demo.vfs_tree.children.append(vfsNode);
     }
-
-    std.log.info("root ({any})", .{demo.vfs_tree.children.items.len});
-    for (demo.vfs_tree.children.items) |item| {
-        std.log.info("{s} ({any})", .{ item.path, item.children.items.len });
-        for (item.children.items) |item2| {
-            std.log.info("{s}/{s} ({any})", .{ item.path, item2.path, item2.children.items.len });
-        }
-    }
-
-    // var iter = tree.depthFirstIterator();
-    // while (iter.next()) |node| {
-    //     std.log.info("{s} ", .{node.value});
-    // }
 }
-
-// fn buttonClicked(button: *capy.Button_Impl) !void {
-//     std.log.info("You clicked button with text {s}", .{button.getLabel()});
-// }
