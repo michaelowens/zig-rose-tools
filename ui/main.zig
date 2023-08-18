@@ -51,11 +51,6 @@ const DemoState = struct {
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !*DemoState {
     const gctx = try zgpu.GraphicsContext.create(allocator, window, .{});
 
-    var arena_state = std.heap.ArenaAllocator.init(allocator);
-    defer arena_state.deinit();
-    const arena = arena_state.allocator();
-    _ = arena;
-
     zgui.init(allocator);
 
     // This needs to be called *after* adding your custom fonts.
