@@ -4,6 +4,8 @@
 
 A library to work with ROSE Online files.
 
+![ui](./ui.png)
+
 ## Acknowledgements
 
 - [Rose Online File Formats | Ralph Minderhoud](https://www.ralphminderhoud.com/rose-formats)
